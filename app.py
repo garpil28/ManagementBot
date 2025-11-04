@@ -10,13 +10,11 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 from pyrogram import Client, idle
 
-# ───────────────────────────────
-# SETUP DASAR
-# ───────────────────────────────
+# === SETUP DASAR ===
 load_dotenv()
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="[%(asctime)s] [%(levelname)s] %(message)s"
 )
 
 API_ID = int(os.getenv("API_ID", "0"))
@@ -25,9 +23,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 MONGO_URI = os.getenv("MONGO_URI", "")
 OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 
-# ───────────────────────────────
-# KONEKSI DATABASE
-# ───────────────────────────────
+# === KONEKSI DATABASE ===
 try:
     mongo = MongoClient(MONGO_URI)
     db = mongo["garfieldbot"]
@@ -36,9 +32,7 @@ except Exception as e:
     logging.error(f"❌ MongoDB connection failed: {e}")
     db = None
 
-# ───────────────────────────────
-# INISIALISASI CLIENT
-# ───────────────────────────────
+# === INISIALISASI CLIENT ===
 app = Client(
     "GarfieldBotManagement",
     api_id=API_ID,
@@ -46,9 +40,7 @@ app = Client(
     bot_token=BOT_TOKEN,
 )
 
-# ───────────────────────────────
-# LOAD HANDLERS OTOMATIS
-# ───────────────────────────────
+# === LOAD HANDLERS OTOMATIS ===
 def load_handlers():
     handler_dir = os.path.join(os.getcwd(), "handlers")
     if not os.path.exists(handler_dir):
@@ -65,9 +57,7 @@ def load_handlers():
             except Exception as e:
                 logging.error(f"❌ Failed to load handler {file}: {e}")
 
-# ───────────────────────────────
-# FUNGSI BACKUP HARIAN
-# ───────────────────────────────
+# === BACKUP OTOMATIS ===
 async def daily_backup():
     try:
         now = datetime.now(timezone("Asia/Jakarta")).strftime("%Y%m%d_%H%M")
@@ -79,28 +69,22 @@ async def daily_backup():
     except Exception as e:
         logging.error(f"⚠️ Backup failed: {e}")
 
-# ───────────────────────────────
-# FUNGSI RESTART OTOMATIS
-# ───────────────────────────────
+# === RESTART OTOMATIS ===
 async def restart_bot():
     try:
-        logging.info("🔁 Restarting Garfield Bot Management ...")
+        logging.info("🔁 Restarting Garfield Bot Management...")
         await daily_backup()
         os.execv(sys.executable, ['python3'] + sys.argv)
     except Exception as e:
         logging.error(f"⚠️ Restart failed: {e}")
 
-# ───────────────────────────────
-# JADWAL OTOMATIS
-# ───────────────────────────────
+# === JADWAL OTOMATIS ===
 scheduler = AsyncIOScheduler(timezone=timezone("Asia/Jakarta"))
 scheduler.add_job(daily_backup, "cron", hour=23, minute=55)
 scheduler.add_job(restart_bot, "cron", hour=0, minute=0)
 scheduler.start()
 
-# ───────────────────────────────
-# LOG SEMUA PESAN (RINGAN)
-# ───────────────────────────────
+# === LOG AKTIVITAS PESAN ===
 @app.on_message()
 async def log_activity(client, message):
     try:
@@ -111,11 +95,18 @@ async def log_activity(client, message):
     except Exception:
         pass
 
-# ───────────────────────────────
-# MAIN ENTRY
-# ───────────────────────────────
+# === STARTUP EVENT ===
+@app.on_message(filters.command("start"))
+async def start_command(client, message):
+    await message.reply_text(
+        f"🐾 Halo {message.from_user.mention}, selamat datang di <b>Garfield Management System</b>!\n"
+        f"Bot aktif 24 jam penuh dan otomatis restart setiap 00:00 WIB.\n\n"
+        f"Gunakan /help untuk melihat menu bantuan sesuai hak akses kamu."
+    )
+
+# === MAIN ENTRY ===
 async def main():
-    logging.info("🚀 Starting Garfield Bot Management...")
+    logging.info("🚀 Starting Garfield Bot Management (Full Version)...")
     load_handlers()
     await app.start()
     logging.info("🤖 Garfield Bot Management started successfully.")
