@@ -1,0 +1,9 @@
+pyrogram==2.0.106
+TgCrypto
+pymongo[srv]
+python-dotenv
+requests
+aiohttp
+asyncio
+pytz
+apscheduler
