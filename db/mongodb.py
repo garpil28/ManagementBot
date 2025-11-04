@@ -1,22 +1,48 @@
-# db/mongo.py — simple Mongo helper
-from pymongo import MongoClient
+# db/mongodb.py — stable async MongoDB helper with auto reconnect
+import asyncio
+import logging
+from motor.motor_asyncio import AsyncIOMotorClient
 from config import MONGO_URI
 from datetime import datetime
 
-if not MONGO_URI:
-    raise RuntimeError("MONGO_URI not set in config.py or .env")
+logger = logging.getLogger("MongoDB")
 
-client = MongoClient(MONGO_URI)
-# database name: garfield_hq
-db = client.garfield_hq
+client = None
+db = None
+is_connected = False
 
-# collections
-bots_col = db.bots          # stores sub-bot records
-partners_col = db.partners  # partner metadata (owner info)
-products_col = db.products  # products (global or per partner)
-users_col = db.users        # known users by bot
-backups_col = db.backups    # backup metadata
+# connect with auto retry
+async def connect(uri: str, retries: int = 5, delay: int = 3):
+    global client, db, is_connected
+    for attempt in range(1, retries + 1):
+        try:
+            client = AsyncIOMotorClient(uri, serverSelectionTimeoutMS=5000)
+            db = client["garfield_hq"]
+            await db.command("ping")
+            is_connected = True
+            logger.info("✅ MongoDB connected successfully.")
+            return
+        except Exception as e:
+            logger.warning(f"⚠️ MongoDB connection failed (attempt {attempt}/{retries}): {e}")
+            await asyncio.sleep(delay)
 
-# helper
+    logger.critical("❌ MongoDB connection failed after multiple attempts. Exiting...")
+    raise ConnectionError("Failed to connect to MongoDB after multiple attempts.")
+
+# function to get a collection safely
+def get_collection(name: str):
+    if not is_connected or db is None:
+        raise RuntimeError("Database not connected. Call connect() first.")
+    return db[name]
+
+# disconnect cleanly
+async def disconnect():
+    global client, is_connected
+    if client:
+        client.close()
+        is_connected = False
+        logger.info("🔌 MongoDB disconnected successfully.")
+
+# helper — current UTC time ISO string
 def now_iso():
     return datetime.utcnow().isoformat() + "Z"
