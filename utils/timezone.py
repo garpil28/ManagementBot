@@ -1,10 +1,10 @@
-# utils/timezone.py — WIB helpers
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
+import pytz
 
-WIB = timezone(timedelta(hours=7))
+WIB = pytz.timezone("Asia/Jakarta")
+
+def now_wib_str():
+    return datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S")
 
 def now_wib_iso():
     return datetime.now(WIB).isoformat()
-
-def now_wib_str(fmt="%Y%m%d_%H%M%S"):
-    return datetime.now(WIB).strftime(fmt)
