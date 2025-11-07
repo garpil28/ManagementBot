@@ -188,3 +188,15 @@ def startup_banner(bot_name):
     print(f"🕓 Time: {wib_now()}")
     print(f"📍 Timezone: WIB (Asia/Jakarta)")
     print("=======================================")
+
+# ==============================================
+# Fungsi safe_send() untuk menghindari error async
+# ==============================================
+import asyncio
+
+async def safe_send(client, chat_id, text, **kwargs):
+    try:
+        return await client.send_message(chat_id, text, **kwargs)
+    except Exception as e:
+        print(f"[safe_send error] {e}")
+        return None
