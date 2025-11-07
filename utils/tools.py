@@ -93,7 +93,7 @@ def make_callback_buttons(buttons: list):
     return InlineKeyboardMarkup([[InlineKeyboardButton(text, callback_data=data)] for text, data in buttons])
 
 # ----------------------------------------------------------
-# Fungsi tag emoji random
+# Fungsi emoji random
 # ----------------------------------------------------------
 def random_emoji(count: int = 1):
     """Ambil emoji random dari daftar"""
@@ -118,7 +118,7 @@ def format_catalog_item(item):
     return text
 
 # ----------------------------------------------------------
-# Fungsi backup log zip (panggil dari owner)
+# Fungsi backup log zip
 # ----------------------------------------------------------
 import os
 import zipfile
@@ -136,7 +136,7 @@ def create_log_backup(folder="logs"):
     return filename
 
 # ----------------------------------------------------------
-# Fungsi delay utility (misal buat tagall, broadcast, dll)
+# Fungsi delay broadcast
 # ----------------------------------------------------------
 async def sleep_delay(sec):
     """Delay async"""
@@ -152,7 +152,7 @@ def random_id(prefix="GARF"):
     return f"{prefix}-{rand}"
 
 # ----------------------------------------------------------
-# Fungsi broadcast ke semua subs
+# Fungsi broadcast ke semua subscribers
 # ----------------------------------------------------------
 async def broadcast_message(client, user_ids: list, text: str):
     success, failed = 0, 0
@@ -188,15 +188,3 @@ def startup_banner(bot_name):
     print(f"🕓 Time: {wib_now()}")
     print(f"📍 Timezone: WIB (Asia/Jakarta)")
     print("=======================================")
-
-# ==============================================
-# Fungsi safe_send() untuk menghindari error async
-# ==============================================
-import asyncio
-
-async def safe_send(client, chat_id, text, **kwargs):
-    try:
-        return await client.send_message(chat_id, text, **kwargs)
-    except Exception as e:
-        print(f"[safe_send error] {e}")
-        return None
