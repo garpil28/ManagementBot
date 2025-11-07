@@ -8,7 +8,7 @@ from pytz import timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from pyrogram import Client, idle, filters  # ✅ filters ditambah
+from pyrogram import Client, idle, filters  # ✅ filters ditambahin biar gak error
 
 # === SETUP DASAR ===
 load_dotenv()
@@ -78,6 +78,12 @@ async def restart_bot():
     except Exception as e:
         logging.error(f"⚠️ Restart failed: {e}")
 
+# === JADWAL OTOMATIS ===
+scheduler = AsyncIOScheduler(timezone=timezone("Asia/Jakarta"))
+scheduler.add_job(daily_backup, "cron", hour=23, minute=55)
+scheduler.add_job(restart_bot, "cron", hour=0, minute=0)
+scheduler.start()
+
 # === LOG AKTIVITAS PESAN ===
 @app.on_message()
 async def log_activity(client, message):
@@ -89,7 +95,7 @@ async def log_activity(client, message):
     except Exception:
         pass
 
-# === START COMMAND ===
+# === START COMMAND (fix filters) ===
 @app.on_message(filters.command("start"))
 async def start_command(client, message):
     await message.reply_text(
@@ -98,26 +104,13 @@ async def start_command(client, message):
         f"Gunakan /help untuk melihat menu bantuan sesuai hak akses kamu."
     )
 
-# === SCHEDULER (dipindah ke async function biar aman) ===
-async def start_scheduler():
-    scheduler = AsyncIOScheduler(timezone=timezone("Asia/Jakarta"))
-    scheduler.add_job(daily_backup, "cron", hour=23, minute=55)
-    scheduler.add_job(restart_bot, "cron", hour=0, minute=0)
-    scheduler.start()
-
-# ✅ Function ini biar bisa dipanggil main.py
-async def start_bot(token=None):
-    logging.info("🤖 Bot starting via start_bot()...")
-    load_handlers()
-    await start_scheduler()
-    await app.start()
-    logging.info("✅ Bot is running!")
-    await idle()
-
-# === MAIN ENTRY Jika dijalanin langsung ===
+# === MAIN ENTRY ===
 async def main():
     logging.info("🚀 Starting Garfield Bot Management (Full Version)...")
-    await start_bot()
+    load_handlers()
+    await app.start()
+    logging.info("🤖 Garfield Bot Management started successfully.")
+    await idle()
 
 if __name__ == "__main__":
     try:
