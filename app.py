@@ -8,7 +8,7 @@ from pytz import timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from pyrogram import Client, idle, filters  # ✅ filters ditambahin biar gak error
+from pyrogram import Client, idle, filters
 
 # === SETUP DASAR ===
 load_dotenv()
@@ -78,11 +78,8 @@ async def restart_bot():
     except Exception as e:
         logging.error(f"⚠️ Restart failed: {e}")
 
-# === JADWAL OTOMATIS ===
-scheduler = AsyncIOScheduler(timezone=timezone("Asia/Jakarta"))
-scheduler.add_job(daily_backup, "cron", hour=23, minute=55)
-scheduler.add_job(restart_bot, "cron", hour=0, minute=0)
-scheduler.start()
+# NOTE:
+# scheduler creation + .start() dipindah ke main() supaya ada event loop yang berjalan.
 
 # === LOG AKTIVITAS PESAN ===
 @app.on_message()
@@ -95,7 +92,7 @@ async def log_activity(client, message):
     except Exception:
         pass
 
-# === START COMMAND (fix filters) ===
+# === START COMMAND ===
 @app.on_message(filters.command("start"))
 async def start_command(client, message):
     await message.reply_text(
@@ -107,13 +104,36 @@ async def start_command(client, message):
 # === MAIN ENTRY ===
 async def main():
     logging.info("🚀 Starting Garfield Bot Management (Full Version)...")
+
+    # load handlers first
     load_handlers()
+
+    # create and start scheduler AFTER event loop is running
+    scheduler = AsyncIOScheduler(timezone=timezone("Asia/Jakarta"))
+    scheduler.add_job(daily_backup, "cron", hour=23, minute=55)
+    scheduler.add_job(restart_bot, "cron", hour=0, minute=0)
+    scheduler.start()
+    logging.info("⏰ Scheduler initialized and started.")
+
+    # start app
     await app.start()
     logging.info("🤖 Garfield Bot Management started successfully.")
+
+    # schedule auto-backup routine as background task if needed
+    try:
+        asyncio.create_task(daily_backup())
+        logging.info("💾 Auto-backup task scheduled.")
+    except Exception as e:
+        logging.error(f"⚠️ Failed to schedule auto-backup task: {e}")
+
+    # keep running until Ctrl+C
     await idle()
 
 if __name__ == "__main__":
     try:
+        # use asyncio.run so event loop is properly created and used
         asyncio.run(main())
     except KeyboardInterrupt:
         logging.info("🛑 Bot stopped manually.")
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
